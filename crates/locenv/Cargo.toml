@@ -1,0 +1,9 @@
+[package]
+name = "locenv"
+version = "0.1.0"
+description = "A library to aid on module development for locenv"
+repository = "https://github.com/locenv/mdl-rust"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
