@@ -2,6 +2,179 @@
 
 This is a Rust library to aid on module development for locenv.
 
+## Develop a locenv module with Rust
+
+First create a new public repository on GitHub. Currently locenv only support installing a module from public repository on GitHub. Then clone the repository to your computer and change a directory to it. Initialize a new library project e.g.:
+
+```sh
+cargo init --lib
+```
+
+You need to add the following crates to your project:
+
+- [locenv](https://crates.io/crates/locenv) contains safe wrapper around locenv APIs.
+- [locenv-macros](https://crates.io/crates/locenv-macros) contains useful macros to build the module.
+
+locenv required a module to be a dynamic library. Add `crate-type = ["cdylib"]` to the section `lib` inside `Cargo.toml`. e.g.:
+
+```toml
+[package]
+name = "autoconf"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+locenv = "0.1"
+locenv-macros = "0.1"
+```
+
+### Sample module
+
+```rust
+// src/lib.rs
+use locenv::api::LuaState;
+use locenv::FunctionEntry;
+use locenv_macros::loader;
+use std::os::raw::c_int;
+
+const MODULE_FUNCTIONS: [FunctionEntry; 1] = [FunctionEntry {
+    name: "myfunction",
+    function: Some(myfunction),
+}];
+
+extern "C" fn myfunction(lua: *mut LuaState) -> c_int {
+    0
+}
+
+#[loader]
+extern "C" fn loader(lua: *mut LuaState) -> c_int {
+    locenv::create_table(lua, 0, 1);
+    locenv::set_functions(lua, &MODULE_FUNCTIONS, 0);
+
+    1
+}
+```
+
+We recommend the Lua official [manual](https://www.lua.org/manual/5.4/manual.html#4) for a quick reference. For more detailed we recommend this online [book](https://www.lua.org/pil/24.html). Please note that locenv does not support Lua coroutine due to it does not play well with Rust.
+
+### Create module definition
+
+```yaml
+# locenv-module.yml
+name: yourmodule
+version: -1
+program:
+  linux: libyourmodule.so
+  darwin: libyourmodule.dylib
+  win32: yourmodule.dll
+```
+
+The `version` will be automatically updated with tag name if you use GitHub Actions to publish your release with configuration in the next section. You can also remove any platform that your module does not support
+
+### Setup GitHub Actions to publish the module
+
+```yaml
+# .github/workflows/cd.yml
+name: CD
+on:
+  push:
+    tags:
+    - '*'
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-11, windows-2022]
+        include:
+        - os: ubuntu-20.04
+          binary: target/release/libyourmodule.so
+          suffix: linux
+        - os: macos-11
+          binary: target/release/libyourmodule.dylib
+          suffix: darwin
+        - os: windows-2022
+          binary: target/release/yourmodule.dll
+          suffix: win32
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+    - name: Build
+      run: cargo build -r
+    - name: Upload module binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: binary-${{ matrix.suffix }}
+        path: ${{ matrix.binary }}
+  release:
+    name: Release
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: write
+    needs: build
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+    - name: Prepare package content
+      run: mkdir -pv package
+    - name: Transform module definition
+      run: |
+        require 'yaml'
+
+        mod = YAML.load_file('locenv-module.yml')
+        mod['version'] = Integer(ENV['GITHUB_REF_NAME'])
+
+        File.open('package/locenv-module.yml', 'w') { |f| f.write mod.to_yaml.gsub("---\n", '') }
+      shell: ruby {0}
+    - name: Download Linux binary
+      uses: actions/download-artifact@v3
+      with:
+        name: binary-linux
+        path: package
+    - name: Download macOS binary
+      uses: actions/download-artifact@v3
+      with:
+        name: binary-darwin
+        path: package
+    - name: Download Windows binary
+      uses: actions/download-artifact@v3
+      with:
+        name: binary-win32
+        path: package
+    - name: Create package
+      run: zip -r ../package.zip *
+      working-directory: package
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: package.zip
+```
+
+Each time you push a new tag, which tag name required to be a non-negative number (e.g. 0, 1, 2 and so on); it will create a release for you automatically.
+
+### Install your module
+
+```sh
+locenv mod install github:user/repository
+```
+
+### Using your module
+
+Here is the example how to use your module from build script:
+
+```yaml
+# locenv-service.yml
+linux:
+  build: |
+    local foo = require 'yourmodule'
+
+    foo.myfunction()
+```
+
 ## License
 
 MIT
