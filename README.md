@@ -19,7 +19,7 @@ locenv required a module to be a dynamic library. Add `crate-type = ["cdylib"]` 
 
 ```toml
 [package]
-name = "autoconf"
+name = "yourmodule"
 version = "0.1.0"
 edition = "2021"
 
@@ -65,14 +65,9 @@ We recommend the Lua official [manual](https://www.lua.org/manual/5.4/manual.htm
 ```yaml
 # locenv-module.yml
 name: yourmodule
-version: -1
-program:
-  linux: libyourmodule.so
-  darwin: libyourmodule.dylib
-  win32: yourmodule.dll
 ```
 
-The `version` will be automatically updated with tag name if you use GitHub Actions to publish your release with configuration in the next section. You can also remove any platform that your module does not support
+Fields other than `name` will be automatically populate for you if you use GitHub Actions to publish your release as in the next section.
 
 ### Setup GitHub Actions to publish the module
 
@@ -92,13 +87,13 @@ jobs:
         include:
         - os: ubuntu-20.04
           binary: target/release/libyourmodule.so
-          suffix: linux
+          artifact: amd64-linux
         - os: macos-11
           binary: target/release/libyourmodule.dylib
-          suffix: darwin
+          artifact: amd64-darwin
         - os: windows-2022
           binary: target/release/yourmodule.dll
-          suffix: win32
+          artifact: amd64-win32
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout source
@@ -108,7 +103,7 @@ jobs:
     - name: Upload module binary
       uses: actions/upload-artifact@v3
       with:
-        name: binary-${{ matrix.suffix }}
+        name: ${{ matrix.artifact }}
         path: ${{ matrix.binary }}
   release:
     name: Release
@@ -119,32 +114,47 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v3
+    - name: Download Linux binary
+      uses: actions/download-artifact@v3
+      with:
+        name: amd64-linux
+        path: amd64-linux
+    - name: Download macOS binary
+      uses: actions/download-artifact@v3
+      with:
+        name: amd64-darwin
+        path: amd64-darwin
+    - name: Download Windows binary
+      uses: actions/download-artifact@v3
+      with:
+        name: amd64-win32
+        path: amd64-win32
     - name: Prepare package content
-      run: mkdir -pv package
+      run: |
+        mkdir -pv package
+        mv -v amd64-linux/libyourmodule.so package/amd64-linux.so
+        mv -v amd64-darwin/libyourmodule.dylib package/amd64-darwin.dylib
+        mv -v amd64-win32/yourmodule.dll package/amd64-win32.dll
     - name: Transform module definition
       run: |
         require 'yaml'
 
         mod = YAML.load_file('locenv-module.yml')
         mod['version'] = Integer(ENV['GITHUB_REF_NAME'])
+        mod['program'] = {
+          'linux' => {
+            'amd64' => 'amd64-linux.so'
+          },
+          'darwin' => {
+            'amd64' => 'amd64-darwin.dylib'
+          },
+          'win32' => {
+            'amd64' => 'amd64-win32.dll'
+          }
+        }
 
         File.open('package/locenv-module.yml', 'w') { |f| f.write mod.to_yaml.gsub("---\n", '') }
       shell: ruby {0}
-    - name: Download Linux binary
-      uses: actions/download-artifact@v3
-      with:
-        name: binary-linux
-        path: package
-    - name: Download macOS binary
-      uses: actions/download-artifact@v3
-      with:
-        name: binary-darwin
-        path: package
-    - name: Download Windows binary
-      uses: actions/download-artifact@v3
-      with:
-        name: binary-win32
-        path: package
     - name: Create package
       run: zip -r ../package.zip *
       working-directory: package
