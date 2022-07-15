@@ -97,7 +97,7 @@ pub struct ApiTable {
     pub lua_callk: unsafe extern "C" fn(*mut LuaState, c_int, c_int, isize, LuaContinuation),
     pub lua_pcallk:
         unsafe extern "C" fn(*mut LuaState, c_int, c_int, c_int, isize, LuaContinuation) -> c_int,
-    pub lua_error: unsafe extern "C" fn(*mut LuaState) -> c_int,
+    pub lua_error: extern "C" fn(*mut LuaState) -> c_int,
     pub lua_warning: unsafe extern "C" fn(*mut LuaState, *const c_char, c_int),
 
     pub lua_checkstack: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
@@ -182,4 +182,6 @@ pub struct ApiTable {
     ) -> *const c_char,
     pub aux_execresult: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub aux_fileresult: unsafe extern "C" fn(*mut LuaState, c_int, *const c_char) -> c_int,
+    pub module_configurations_path:
+        unsafe extern "C" fn(*const Locenv, *const c_char, *mut c_char, u32) -> u32,
 }
