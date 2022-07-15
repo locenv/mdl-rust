@@ -2,6 +2,11 @@
 
 This is a Rust library to aid on module development for locenv.
 
+| Crate         | Version                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| locenv        | [![Crates.io](https://img.shields.io/crates/v/locenv)](https://crates.io/crates/locenv)               |
+| locenv-macros | [![Crates.io](https://img.shields.io/crates/v/locenv-macros)](https://crates.io/crates/locenv-macros) |
+
 ## Develop a locenv module with Rust
 
 First create a new public repository on GitHub. Currently locenv only support installing a module from public repository on GitHub. Then clone the repository to your computer and change a directory to it. Initialize a new library project e.g.:
