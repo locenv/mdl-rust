@@ -9,6 +9,19 @@ pub type LuaWriter =
 pub type LuaAlloc = unsafe extern "C" fn(*mut c_void, *mut c_void, usize, usize) -> *mut c_void;
 
 #[repr(C)]
+pub struct BootstrapContext {
+    pub revision: u32,
+    pub name: *const c_char,
+    pub locenv: *const Locenv,
+    pub lua: *mut LuaState,
+}
+
+#[repr(C)]
+pub struct Locenv {
+    private: [u8; 0],
+}
+
+#[repr(C)]
 pub struct LuaState {
     private: [u8; 0],
 }

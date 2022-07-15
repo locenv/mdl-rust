@@ -1,4 +1,4 @@
-use self::api::{ApiTable, LuaFunction, LuaReg, LuaState};
+use self::api::{ApiTable, Locenv, LuaFunction, LuaReg, LuaState};
 use std::collections::LinkedList;
 use std::ffi::CString;
 use std::mem::{size_of, transmute};
@@ -12,6 +12,7 @@ pub const LUAI_MAXSTACK: c_int = if LUAI_IS32INT { 1000000 } else { 15000 };
 pub const LUA_REGISTRYINDEX: c_int = -LUAI_MAXSTACK - 1000;
 
 pub static mut MODULE_NAME: String = String::new();
+pub static mut CONTEXT: *const Locenv = null();
 pub static mut API_TABLE: *const ApiTable = null();
 
 /// Gets name of the current module.
