@@ -1,6 +1,6 @@
 use self::api::{ApiTable, Locenv, LuaFunction, LuaReg, LuaState};
 use std::collections::LinkedList;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::mem::{size_of, transmute};
 use std::os::raw::{c_int, c_uint};
 use std::path::PathBuf;
@@ -16,6 +16,18 @@ pub const LUA_REGISTRYINDEX: c_int = -LUAI_MAXSTACK - 1000;
 pub static mut MODULE_NAME: String = String::new();
 pub static mut CONTEXT: *const Locenv = null();
 pub static mut API_TABLE: *const ApiTable = null();
+
+/// A shorthand for:
+///
+/// ```
+/// error_with_message(lua, &format!(...));
+/// ```
+#[macro_export]
+macro_rules! error {
+    ($($arg:tt)*) => {
+        locenv::error_with_message(lua, &std::format!($($arg)*))
+    }
+}
 
 /// Gets name of the current module.
 pub fn get_module_name() -> &'static str {
@@ -136,6 +148,14 @@ pub fn set_functions(lua: *mut LuaState, entries: &[FunctionEntry], upvalues: c_
     unsafe { (get_api().aux_setfuncs)(lua, table.as_ptr(), upvalues) };
 }
 
+/// Checks whether the function argument `arg` is a string and returns this string.
+pub fn check_string(lua: *mut LuaState, arg: c_int) -> String {
+    let data = unsafe { (get_api().aux_checklstring)(lua, arg, null_mut()) };
+    let raw = unsafe { CStr::from_ptr(data) };
+
+    raw.to_str().unwrap().into()
+}
+
 /// Raises a type error for the argument `arg` of the function that called it, using a standard message; `expect` is
 /// a "name" for the expected type.
 pub fn type_error(lua: *mut LuaState, arg: c_int, expect: &str) -> ! {
@@ -156,7 +176,7 @@ pub fn argument_error(lua: *mut LuaState, arg: c_int, comment: &str) -> ! {
     unreachable!();
 }
 
-/// Raises an error with the specified message.
+/// Raises a Lua error with the specified message.
 pub fn error_with_message(lua: *mut LuaState, message: &str) -> ! {
     let format = CString::new("%s").unwrap();
     let message = CString::new(message).unwrap();
@@ -191,6 +211,20 @@ pub trait Object: UserData {
 /// Represents a method of a Lua object.
 pub struct MethodEntry<T: ?Sized> {
     pub name: &'static str,
+
+    /// A pointer to function for this method. Please note that the first argument for
+    /// the method is on the **second** index, not the first index. Let say the user
+    /// invoke your method as the following:
+    ///
+    /// ```
+    /// v:method('abc')
+    /// ```
+    ///
+    /// Within this function can get 'abc' with:
+    ///
+    /// ```
+    /// locenv::check_string(lua, 2)
+    /// ```
     pub function: Method<T>,
 }
 
