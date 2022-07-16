@@ -1,4 +1,6 @@
-use self::api::{ApiTable, Locenv, LuaFunction, LuaReg, LuaState};
+pub use self::api::LuaState;
+
+use self::api::{ApiTable, Locenv, LuaFunction, LuaReg};
 use std::collections::LinkedList;
 use std::ffi::{CStr, CString};
 use std::mem::{size_of, transmute};
@@ -17,11 +19,7 @@ pub static mut MODULE_NAME: String = String::new();
 pub static mut CONTEXT: *const Locenv = null();
 pub static mut API_TABLE: *const ApiTable = null();
 
-/// A shorthand for:
-///
-/// ```
-/// error_with_message(lua, &format!(...));
-/// ```
+/// A helper macro that combine `error_with_message` and `format` together.
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {
@@ -212,19 +210,23 @@ pub trait Object: UserData {
 pub struct MethodEntry<T: ?Sized> {
     pub name: &'static str,
 
-    /// A pointer to function for this method. Please note that the first argument for
-    /// the method is on the **second** index, not the first index. Let say the user
-    /// invoke your method as the following:
+    /// A pointer to function for this method.
     ///
-    /// ```
+    /// Please note that the first argument for the method is on the **second** index, not the first index.
+    /// Let say the user invoke your method as the following:
+    ///
+    /// ```notrust
     /// v:method('abc')
     /// ```
     ///
-    /// Within this function can get 'abc' with:
+    /// Within this function you can get 'abc' with:
     ///
+    /// ```no_run
+    /// # let lua: *mut locenv::LuaState = std::ptr::null_mut();
+    /// locenv::check_string(lua, 2);
     /// ```
-    /// locenv::check_string(lua, 2)
-    /// ```
+    ///
+    /// Notice the index is `2`, not `1`.
     pub function: Method<T>,
 }
 
