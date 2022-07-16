@@ -14,6 +14,7 @@ pub struct BootstrapContext {
     pub name: *const c_char,
     pub locenv: *const Locenv,
     pub lua: *mut LuaState,
+    pub working_directory: *const c_char,
 }
 
 #[repr(C)]

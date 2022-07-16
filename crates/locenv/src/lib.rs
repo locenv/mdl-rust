@@ -17,19 +17,33 @@ pub const LUA_REGISTRYINDEX: c_int = -LUAI_MAXSTACK - 1000;
 
 pub static mut MODULE_NAME: String = String::new();
 pub static mut CONTEXT: *const Locenv = null();
+pub static mut WORKING_DIRECTORY: String = String::new();
 pub static mut API_TABLE: *const ApiTable = null();
 
 /// A helper macro that combine `error_with_message` and `format` together.
+///
+/// # Examples
+///
+/// ```no_run
+/// # let lua: *mut locenv::LuaState = std::ptr::null_mut();
+/// # let e = "abc";
+/// locenv::error!(lua, "Something went wrong: {}", e);
+/// ```
 #[macro_export]
 macro_rules! error {
-    ($($arg:tt)*) => {
-        locenv::error_with_message(lua, &std::format!($($arg)*))
+    ($lua:ident, $($arg:tt)*) => {
+        locenv::error_with_message($lua, &std::format!($($arg)*))
     }
 }
 
 /// Gets name of the current module.
 pub fn get_module_name() -> &'static str {
     unsafe { &MODULE_NAME }
+}
+
+/// Gets a full path to the directory where the current Lua script is working on.
+pub fn get_working_directory() -> &'static str {
+    unsafe { &WORKING_DIRECTORY }
 }
 
 /// Gets a full path where to store configurations for this module. The returned value is in the following form:
