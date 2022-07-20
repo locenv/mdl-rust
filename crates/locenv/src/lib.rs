@@ -30,7 +30,7 @@ pub static mut API_TABLE: *const ApiTable = null();
 /// # Examples
 ///
 /// ```no_run
-/// # let lua: *mut locenv::LuaState = std::ptr::null_mut();
+/// # let lua: *mut locenv::api::LuaState = std::ptr::null_mut();
 /// # let e = "abc";
 /// locenv::error!(lua, "Something went wrong: {}", e);
 /// ```
@@ -269,7 +269,7 @@ pub struct MethodEntry<T: ?Sized> {
     /// Within this function you can get 'abc' with:
     ///
     /// ```no_run
-    /// # let lua: *mut locenv::LuaState = std::ptr::null_mut();
+    /// # let lua: *mut locenv::api::LuaState = std::ptr::null_mut();
     /// locenv::check_string(lua, 2);
     /// ```
     ///
