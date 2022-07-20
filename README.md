@@ -36,12 +36,14 @@ locenv = "0.1"
 locenv-macros = "0.1"
 ```
 
+Please note that your module might be loaded by multiple Lua VMs so take this into consideration when working with any global states.
+
 ### Sample module
 
 ```rust
 // src/lib.rs
 use locenv::api::LuaState;
-use locenv::FunctionEntry;
+use locenv::{Context, FunctionEntry, upvalue_index};
 use locenv_macros::loader;
 use std::os::raw::c_int;
 
@@ -51,14 +53,21 @@ const MODULE_FUNCTIONS: [FunctionEntry; 1] = [FunctionEntry {
 }];
 
 extern "C" fn myfunction(lua: *mut LuaState) -> c_int {
+    // We can access the context here because we make it as the upvalue for this function in the loader.
+    let context = Context::from_lua(lua, upvalue_index(1));
+
     0
 }
 
 #[loader]
 extern "C" fn loader(lua: *mut LuaState) -> c_int {
-    locenv::create_table(lua, 0, 1);
-    locenv::set_functions(lua, &MODULE_FUNCTIONS, 0);
+    // More information about 'loader': https://www.lua.org/manual/5.4/manual.html#6.3
+    // The loader data is locenv::Context.
+    locenv::create_table(lua, 0, MODULE_FUNCTIONS.len() as _);
+    locenv::push_value(lua, 2); // Push a loader data as upvalue for all functions in MODULE_FUNCTIONS.
+    locenv::set_functions(lua, &MODULE_FUNCTIONS, 1);
 
+    // Return a function table that we just created on above.
     1
 }
 ```

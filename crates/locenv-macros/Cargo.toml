@@ -1,6 +1,6 @@
 [package]
 name = "locenv-macros"
-version = "0.5.0"
+version = "0.6.0"
 description = "A collection of macros to aid on module development for locenv"
 repository = "https://github.com/locenv/mdl-rust"
 license = "MIT"

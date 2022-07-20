@@ -12,14 +12,9 @@ pub type LuaAlloc = unsafe extern "C" fn(*mut c_void, *mut c_void, usize, usize)
 pub struct BootstrapContext {
     pub revision: u32,
     pub name: *const c_char,
-    pub locenv: *const Locenv,
+    pub locenv: *const c_void,
     pub lua: *mut LuaState,
     pub working_directory: *const c_char,
-}
-
-#[repr(C)]
-pub struct Locenv {
-    private: [u8; 0],
 }
 
 #[repr(C)]
@@ -47,7 +42,7 @@ pub struct ApiTable {
     pub lua_pushnumber: unsafe extern "C" fn(*mut LuaState, c_double),
     pub lua_pushstring: unsafe extern "C" fn(*mut LuaState, *const c_char) -> *const c_char,
     pub lua_pushthread: unsafe extern "C" fn(*mut LuaState) -> c_int,
-    pub lua_pushvalue: unsafe extern "C" fn(*mut LuaState, c_int),
+    pub lua_pushvalue: extern "C" fn(*mut LuaState, c_int),
     pub lua_pushvfstring:
         unsafe extern "C" fn(*mut LuaState, *const c_char, *mut c_void) -> *const c_char,
     pub lua_createtable: extern "C" fn(*mut LuaState, c_int, c_int),
@@ -69,7 +64,7 @@ pub struct ApiTable {
     pub lua_isuserdata: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_type: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_typename: unsafe extern "C" fn(*mut LuaState, c_int) -> *const c_char,
-    pub lua_getmetatable: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
+    pub lua_getmetatable: extern "C" fn(*mut LuaState, c_int) -> c_int,
 
     pub lua_toboolean: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_tocfunction: unsafe extern "C" fn(*mut LuaState, c_int) -> LuaFunction,
@@ -93,7 +88,7 @@ pub struct ApiTable {
     pub lua_setglobal: unsafe extern "C" fn(*mut LuaState, *const c_char),
 
     pub lua_gettop: unsafe extern "C" fn(*mut LuaState) -> c_int,
-    pub lua_settop: unsafe extern "C" fn(*mut LuaState, c_int),
+    pub lua_settop: extern "C" fn(*mut LuaState, c_int),
 
     pub lua_callk: unsafe extern "C" fn(*mut LuaState, c_int, c_int, isize, LuaContinuation),
     pub lua_pcallk:
@@ -102,7 +97,7 @@ pub struct ApiTable {
     pub lua_warning: unsafe extern "C" fn(*mut LuaState, *const c_char, c_int),
 
     pub lua_checkstack: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
-    pub lua_absindex: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
+    pub lua_absindex: extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_copy: unsafe extern "C" fn(*mut LuaState, c_int, c_int),
     pub lua_rotate: unsafe extern "C" fn(*mut LuaState, c_int, c_int),
 
@@ -184,5 +179,5 @@ pub struct ApiTable {
     pub aux_execresult: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub aux_fileresult: unsafe extern "C" fn(*mut LuaState, c_int, *const c_char) -> c_int,
     pub module_configurations_path:
-        unsafe extern "C" fn(*const Locenv, *const c_char, *mut c_char, u32) -> u32,
+        unsafe extern "C" fn(*const c_void, *const c_char, *mut c_char, u32) -> u32,
 }
