@@ -1,6 +1,6 @@
 [package]
 name = "locenv-macros"
-version = "0.6.0"
+version = "0.6.1"
 description = "A collection of macros to aid on module development for locenv"
 repository = "https://github.com/locenv/mdl-rust"
 license = "MIT"
@@ -12,3 +12,6 @@ proc-macro = true
 [dependencies]
 quote = "1.0"
 syn = { version = "1.0", features = ["full"] }
+
+[dev-dependencies]
+locenv = { path = "../locenv" }

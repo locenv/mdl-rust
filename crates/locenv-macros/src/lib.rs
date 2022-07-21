@@ -2,6 +2,22 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
+/// Specify that the function is a module loader.
+///
+/// See https://www.lua.org/manual/5.4/manual.html#6.3 for more information.
+///
+/// # Examples
+///
+/// ```no_run
+/// use locenv::api::LuaState;
+/// use locenv_macros::loader;
+/// use std::os::raw::c_int;
+///
+/// #[loader]
+/// extern "C" fn loader(lua: *mut LuaState) -> c_int {
+///     0
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn loader(_: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
@@ -18,7 +34,7 @@ pub fn loader(_: TokenStream, item: TokenStream) -> TokenStream {
             let lua = (*bootstrap).lua;
             let context = locenv::Context::new(bootstrap);
 
-            ((*api).lua_pushcclosure)(lua, #loader, 0);
+            locenv::push_fn(lua, #loader, 0);
 
             // Move context to user data.
             let raw = Box::into_raw(Box::new(context));
@@ -29,16 +45,15 @@ pub fn loader(_: TokenStream, item: TokenStream) -> TokenStream {
 
             // Associate the userdata with metatable.
             if ((*api).aux_newmetatable)(lua, (*bootstrap).name) == 0 {
-                ((*api).lua_settop)(lua, -3); // Pop metatable and user data.
-
-                // Push error.
                 let context = Box::from_raw(raw);
-                let error = std::ffi::CString::new(format!("someone already created a metatable named '{}'", context.module_name())).unwrap();
-                ((*api).lua_pushstring)(lua, error.as_ptr());
+
+                locenv::pop(lua, 3); // Pop metatable + user data + loader.
+                locenv::push_str(lua, &format!("someone already created a metatable named '{}'", context.module_name()));
+
                 return 1;
             }
 
-            ((*api).lua_pushstring)(lua, b"__gc\0");
+            ((*api).lua_pushstring)(lua, b"__gc\0".as_ptr() as *const _);
             ((*api).lua_pushstring)(lua, (*bootstrap).name);
             ((*api).lua_pushcclosure)(lua, locenv::Context::finalize, 1);
             ((*api).lua_settable)(lua, -3);

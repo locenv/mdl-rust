@@ -375,16 +375,17 @@ impl Context {
         }
     }
 
-    pub unsafe extern "C" fn finalize(lua: *mut LuaState) -> c_int {
+    /// A finalizer for [`Context`]. This method is used by #\[loader\] attribute.
+    pub extern "C" fn finalize(lua: *mut LuaState) -> c_int {
         // Get a pointer to context.
-        let table = (api().aux_checklstring)(lua, upvalue_index(1), null_mut());
-        let ud = (api().aux_checkudata)(lua, 1, table);
+        let table = unsafe { (api().aux_checklstring)(lua, upvalue_index(1), null_mut()) };
+        let ud = unsafe { (api().aux_checkudata)(lua, 1, table) };
         let raw: *mut Self = null_mut();
 
-        ud.copy_to_nonoverlapping(transmute(&raw), size_of::<*mut Self>());
+        unsafe { ud.copy_to_nonoverlapping(transmute(&raw), size_of::<*mut Self>()) };
 
         // Destroy.
-        Box::from_raw(raw);
+        unsafe { Box::from_raw(raw) };
 
         0
     }
