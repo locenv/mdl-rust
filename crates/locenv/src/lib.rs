@@ -163,6 +163,25 @@ pub fn set_functions(lua: *mut LuaState, entries: &[FunctionEntry], upvalues: c_
     unsafe { (api().aux_setfuncs)(lua, table.as_ptr(), upvalues) };
 }
 
+/// Returns `true` if the given `index` is not valid or if the value at this `index` is nil, and
+/// `false` otherwise.
+pub fn is_none_or_nil(lua: *mut LuaState, index: c_int) -> bool {
+    (api().lua_type)(lua, index) <= 0
+}
+
+/// If the function argument `arg` is a string, returns this string. If this argument is absent or
+/// is nil, returns [`None`]. Otherwise, raises an error.
+///
+/// This function uses [`to_string`] to get its result, so all conversions and caveats of that
+/// function apply here.
+pub fn opt_string(lua: *mut LuaState, arg: c_int) -> Option<String> {
+    if is_none_or_nil(lua, arg) {
+        None
+    } else {
+        Some(check_string(lua, arg))
+    }
+}
+
 /// Checks whether the function argument `arg` is a string and returns this string.
 pub fn check_string(lua: *mut LuaState, arg: c_int) -> String {
     let data = unsafe { (api().aux_checklstring)(lua, arg, null_mut()) };

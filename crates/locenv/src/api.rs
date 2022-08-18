@@ -62,7 +62,7 @@ pub struct ApiTable {
     pub lua_isnumber: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_isstring: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_isuserdata: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
-    pub lua_type: unsafe extern "C" fn(*mut LuaState, c_int) -> c_int,
+    pub lua_type: extern "C" fn(*mut LuaState, c_int) -> c_int,
     pub lua_typename: unsafe extern "C" fn(*mut LuaState, c_int) -> *const c_char,
     pub lua_getmetatable: extern "C" fn(*mut LuaState, c_int) -> c_int,
 

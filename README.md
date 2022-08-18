@@ -32,8 +32,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-locenv = "0.1"
-locenv-macros = "0.1"
+locenv = "0.7"
+locenv-macros = "0.7"
 ```
 
 Please note that your module might be loaded by multiple Lua VMs so take this into consideration when working with any global states.
